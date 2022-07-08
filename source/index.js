@@ -70,7 +70,7 @@ function displayLeads() {
         const btnEdit = document.createElement('button')
 
         // adding features to elLead
-        elLead.addEventListener('click', copyLead.bind(null, elLead))
+        elLead.addEventListener('click', e => copyLead(e))
         
         // adding features to elAhrefLead and adding a href to elLead
         elAhrefLead.textContent = lead
@@ -102,17 +102,20 @@ function displayLeads() {
 
     function editLead(idx, elDiv, elLead) {
         const inputEl = convertTo('input', elDiv, elLead)
+        const editHandle = () => {
+            LeadStorage.updateLead(idx, inputEl.value);
+            displayLeads();
+        }
         inputEl.classList.add('lead-input')
+        inputEl.focus();
         inputEl.addEventListener('keyup', (event) => {
             if(event.key !== 'Enter'){
                 return
             }
-            LeadStorage.updateLead(idx, inputEl.value)
-            displayLeads()
+            editHandle()
         })
         inputEl.addEventListener('focusout', () => {
-            LeadStorage.updateLead(idx, inputEl.value)
-            displayLeads()
+            editHandle()
         })
     }
 
@@ -129,8 +132,6 @@ function displayLeads() {
             const inputValue = target.textContent
             newElement = document.createElement('input')
             newElement.value = inputValue
-
-            newElement.focus()
         } else {
             const inputValue = target.value;
             newElement = document.createElement('li');
@@ -151,10 +152,10 @@ function displayLeads() {
         html.style.height = "1px"
     }
 
-    function copyLead(text) {
-        var copyText = text
-        navigator.clipboard.writeText(copyText.textContent)
-        alert("Copied the text: " + copyText.textContent);
+    function copyLead(e) {
+        var copyText = e.target.textContent
+        navigator.clipboard.writeText(copyText)
+        alert("Copied the text: " + copyText);
     }
 }
 
