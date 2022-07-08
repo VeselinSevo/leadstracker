@@ -5,7 +5,27 @@ const saveTabButton = document.querySelector('#savetab-btn')
 let savedText = document.querySelector('#saved-text')
 let leadsDiv = document.querySelector('#leads-div')
 let leads = []
-const leadsFromLocalStorage = JSON.parse(localStorage.getItem("leads"))
+const LeadStorage = {
+    addLead(text) {
+        leads.push(text)
+        localStorage.setItem("leads", JSON.stringify(leads))
+    },
+
+    getLeads() {
+        return JSON.parse(localStorage.getItem("leads"))
+    },
+
+    updateLead(idx, text) {
+        leads[idx] = text
+        localStorage.setItem("leads", JSON.stringify(leads))
+    },
+
+    deleteLead(idx) {
+        leads.splice(idx, 1)
+        localStorage.setItem("leads", JSON.stringify(leads))
+    }
+}
+const leadsFromLocalStorage = LeadStorage.getLeads()
 
 if(leadsFromLocalStorage) {
     leads = leadsFromLocalStorage
@@ -18,19 +38,16 @@ deleteAllButton.addEventListener('click', this.deleteAll)
 
 saveTabButton.addEventListener('click', function(){
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        leads.push(tabs[0].url)
-        localStorage.setItem("leads", JSON.stringify(leads))
+        LeadStorage.addLead(tabs[0].url)
         displayLeads()
     })
 })
 
-
 function saveLead() {
     let lead = textInput.value
     if(lead != "") {
-    leads.push(lead)
+    LeadStorage.addLead(lead)
     }
-    localStorage.setItem("leads", JSON.stringify(leads))
     displayLeads()
 }
 
@@ -48,20 +65,28 @@ function displayLeads() {
         // getting and storing elements
         const elDiv = document.createElement('div')
         const elLead = document.createElement('li')
+        const elAhrefLead = document.createElement('a')
         const btnDelete = document.createElement('button')
         const btnEdit = document.createElement('button')
 
         // adding features to elLead
-        elLead.textContent = lead
         elLead.addEventListener('click', copyLead.bind(null, elLead))
         
+        // adding features to elAhrefLead and adding a href to elLead
+        elAhrefLead.textContent = lead
+        elAhrefLead.href = lead
+        elLead.appendChild(elAhrefLead)
+
         // adding features to btnDelete 
         btnDelete.innerText = "Delete"
         btnDelete.addEventListener('click', deleteLead.bind(null, idx, elDiv))
     
         // adding features to btnEdit
         btnEdit.innerText = "Edit"
-        btnEdit.addEventListener('click', deleteLead.bind(null, idx, elDiv))
+        btnEdit.addEventListener('click', () => {
+            btnEdit.disabled = true;
+            editLead.call(null, idx, elDiv, elLead);
+        })
 
         // appending parent div with new elements
         elDiv.appendChild(elLead)
@@ -75,14 +100,55 @@ function displayLeads() {
         leadsDiv.appendChild(elDiv)
         })
 
+    function editLead(idx, elDiv, elLead) {
+        const inputEl = convertTo('input', elDiv, elLead)
+        inputEl.classList.add('lead-input')
+        inputEl.addEventListener('keyup', (event) => {
+            if(event.key !== 'Enter'){
+                return
+            }
+            LeadStorage.updateLead(idx, inputEl.value)
+            displayLeads()
+        })
+        inputEl.addEventListener('focusout', () => {
+            LeadStorage.updateLead(idx, inputEl.value)
+            displayLeads()
+        })
+    }
+
+    /**
+     * 
+     * @param {'input' | 'li'} type Type to convert into
+     * @param {HTMLElement} parentEl Parent of the targeted element
+     * @param {HTMLLIElement} target Element to convert
+     * @returns 
+     */
+    function convertTo(type, parentEl, target) {
+        let newElement = null
+        if(type === 'input') {
+            const inputValue = target.textContent
+            newElement = document.createElement('input')
+            newElement.value = inputValue
+
+            newElement.focus()
+        } else {
+            const inputValue = target.value;
+            newElement = document.createElement('li');
+            newElement.textContent = inputValue;
+        }
+
+        parentEl.removeChild(target);
+        parentEl.prepend(newElement);
+
+        return newElement;
+    }
+
     function deleteLead(idx, elDiv) {
         leadsDiv.removeChild(elDiv)
-        leads.splice(idx, 1)
-        localStorage.setItem("leads", JSON.stringify(leads))
+        LeadStorage.deleteLead(idx)
         displayLeads()
         const html = document.getElementsByTagName("html")[0]
         html.style.height = "1px"
-        console.log(html.style.height)
     }
 
     function copyLead(text) {
