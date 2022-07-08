@@ -30,6 +30,11 @@ button {
     font-weight: bold;
 }
 
+button:disabled {
+    background-color: gray;
+    cursor: auto;
+}
+
 ul {
     display: list-item;
     align-items: stretch;
